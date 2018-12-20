@@ -1,6 +1,8 @@
 <template>
   <div class="navBar">
+    
       <div style="border:3px solid red"></div>
+      <img src="infor.png" alt="" style="width: 232px;float: left;display: inline-block;margin: 2px 5px;">
       <ul  class="navList">
         <li v-for="(item,index) in navList" :key="index"   @click="mouseEnter(index)"  :class="{active:index==isActive}" > 
             <router-link :key="index" :to="item.path" :class="{active:index==isActive}" style="height: 100%;width: 100%;display: inline-block;">
