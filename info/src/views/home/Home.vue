@@ -57,7 +57,7 @@
               <span style="height: 25px;width: 30px;display: inline-block;background-color: orange;line-height: 25px;text-align: center;color: #fff;font-weight: bold;border-radius: 6px;margin-right: 0.2%;">3</span> 
               短信接收号码
           </p>
-            <textarea style="text-align: left;width: 97%;margin: 10px auto;height: 200px;" v-model="phoneNumber" placeholder="手机号码请用'，'隔开"></textarea>
+            <textarea style="text-align: left;width: 97%;margin: 10px auto;height: 200px;" v-model="phoneNumber" placeholder="手机号码请用中文符号'，'隔开"  plain @click="openTie"></textarea>
           </div>
       </div>
       <div style="float: left;width: 17%;min-height: 500px;border: 1px solid rgb(221, 221, 221);margin-left: 20px;background-color: #fff;">
@@ -232,6 +232,8 @@
                   range-separator="至"
                   start-placeholder="开始日期"
                   end-placeholder="结束日期"
+                  value-format="yyyy-MM-dd HH:mm:ss"
+                  format = "yyyy-MM-dd HH:mm:ss"
                   align="right">
                 </el-date-picker>
 
@@ -245,7 +247,7 @@
                 style="width: 100%;text-align:center">
                 <el-table-column
                 prop="ids"
-                label="编号"
+                label="短信签名"
                 width="180">
                 </el-table-column>
                 <el-table-column
@@ -253,20 +255,16 @@
                 label="内容">
                 </el-table-column>
                 <el-table-column
-                prop="states"
-                label="状态">
-                </el-table-column>
-                <el-table-column
                 prop="dates"
                 label="发送时间">
                 </el-table-column>
                 <el-table-column
                 prop="names"
-                label="发信人">
+                label="收件人">
                 </el-table-column>
                 <el-table-column
                 prop="users"
-                label="收件人">
+                label="收件号码">
                 </el-table-column>
             </el-table>
       </div>
@@ -325,7 +323,7 @@ export default {
       textareaName: "",
       textareaRemark: "",
       dialogVisibleChoose: false,
-      phoneNumber: "",
+      phoneNumber: '',
       dialogFormVisible: false,
       form: {
         name: "",
@@ -344,8 +342,10 @@ export default {
         user: "",
         userPhone: ""
       },
-      value1: '',
-      value2: '',
+      value1: "",
+      value2: [],
+      parameters : "",
+      
     };
   },
   computed: {
@@ -363,21 +363,22 @@ export default {
         this.showTre = false;
         this.showHis = false;
         this.data2 = [];
-        let userPhoneList = [];
         this.$axios
           .get("http://192.168.13.178:8002/api/Terminal/GetTerminal")
           .then(function(response) {
-            for (let i = 0; i < response.data.length; i++) {
-              _self.data2.push({
-                label: response.data[i].TUseCompany,
-                children: [
-                  {
-                    label: response.data[i].TerminalVal,
-                    phone: response.data[i].TerminalVal
-                  }
-                ]
-              });
-            }
+            response.data.map(n => {
+              if (n.Type == 0) {
+                _self.data2.push({
+                  label: n.TUseCompany,
+                  children: [
+                    {
+                      label: n.TerminalVal,
+                      phone: n.TerminalVal
+                    }
+                  ]
+                });
+              }
+            });
           })
           .catch(function(error) {
             console.log(error);
@@ -392,22 +393,22 @@ export default {
         this.$axios
           .get("http://192.168.13.178:8002/api/SMS/GetSmsTemplate")
           .then(function(response) {
-            for (let i = 0; i < response.data.length; i++) {
-              if (response.data[i].status == 0) {
-                response.data[i].send = "审核通过";
-              } else if (response.data[i].status == 1) {
-                response.data[i].send = "待审核";
-              } else if (response.data[i].status == 2) {
-                response.data[i].send = "审核未通过";
+            response.data.map(n => {
+              if (n.status == 0) {
+                n.send = "审核通过";
+              } else if (n.status == 1) {
+                n.send = "待审核";
+              } else if (n.status == 2) {
+                n.send = "审核未通过";
               }
               tableD3.push({
-                name: response.data[i].remark,
-                id: response.data[i].id,
-                content: response.data[i].text,
-                date: response.data[i].time,
-                state: response.data[i].send
+                name: n.remark,
+                id: n.id,
+                content: n.text,
+                date: n.time,
+                state: n.send
               });
-            }
+            });
           })
           .catch(function(error) {
             console.log(error);
@@ -477,21 +478,25 @@ export default {
           }
         }
       }
+      //去掉数组中的false, null, 0, "", undefined, and NaN
       let formattingArr = [];
       for (let item of phonrToPost) {
         if (item) {
           formattingArr.push(item);
         }
       }
+      //截取花括号内容
       let regex3 = /[^\{\)]+(?=\})/g;
       let successMessage = this.$message;
+      console.log(this.parameters,123456789)
       this.$axios
         .post("http://192.168.13.178:8002/api/SMS/AddSms", {
           userName: "张三",
           phoneNumbers: formattingArr,
           smsSign: "延安气象信息",
           parameters: this.textarea.match(regex3),
-          templateId: "244923"
+          templateId: "244923",
+          SmsContent:this.textarea
         })
         .then(function(response) {
           if (response.data == "success") {
@@ -502,6 +507,8 @@ export default {
             });
             _self.textarea = "";
             _self.phoneNumber = "";
+          }else{
+            successMessage.error('发送失败！请检查填写数据是否符合规范。');
           }
         })
         .catch(function(error) {
@@ -522,8 +529,8 @@ export default {
     },
     //添加模板
     submitTre() {
-       let successMessage = this.$message;
-       let _self = this;
+      let successMessage = this.$message;
+      let _self = this;
       this.$axios
         .post("http://192.168.13.178:8002/api/SMS/AddSmsTemplate", {
           remark: this.textareaRemark,
@@ -539,9 +546,11 @@ export default {
               message: "添加成功！",
               type: "success"
             });
-          _self.textareaRemark = '';
-          _self.treContent = '';
-          _self.textareaName = '';
+            _self.textareaRemark = "";
+            _self.treContent = "";
+            _self.textareaName = "";
+          }else{
+            successMessage.error('添加失败！请检查填写数据是否符合规范。');
           }
         })
         .catch(function(error) {
@@ -555,19 +564,19 @@ export default {
       this.$axios
         .get("http://192.168.13.178:8002/api/SMS/GetSmsTemplate")
         .then(function(response) {
-          for (let i = 0; i < response.data.length; i++) {
-            if (response.data[i].status == 0) {
-              response.data[i].send = "审核通过";
+          response.data.map(n => {
+            if (n.status == 0) {
+              n.send = "审核通过";
               tableD5.push({
-                name: response.data[i].remark,
-                id: response.data[i].id,
-                content: response.data[i].text,
-                date: response.data[i].time,
-                state: response.data[i].send,
+                name: n.remark,
+                id: n.id,
+                content: n.text,
+                date: n.time,
+                state: n.send,
                 operation: "使用"
               });
             }
-          }
+          });
         })
         .catch(function(error) {
           console.log(error);
@@ -575,9 +584,16 @@ export default {
     },
     //选择模板
     chooseSendContent(index, row) {
+      let _self = this
       this.textarea = "";
       this.dialogVisibleChoose = false;
-      this.textarea = row.content;
+      console.log(row.id)
+      this.$axios.get('http://192.168.13.178:8002/api/Terminal/GetTerminalContent?templateId='+row.id)
+      .then(function(response){
+        console.log(response.data)
+        _self.textarea = response.data
+        _self.parameters = response.data
+      })
     },
     //添加终端
     addPhone() {
@@ -625,10 +641,38 @@ export default {
               userPhone: ""
             };
             _self.dialogFormVisible = false;
+          }else{
+            successMessage.error('添加失败！请检查填写数据是否符合规范。');
           }
         })
         .catch(function(error) {
           console.log(error);
+        });
+    },
+    //查询
+    search() {
+      let _self = this;
+      _self.tableDatas = [];
+      this.$axios
+        .get("http://192.168.13.178:8002/api/SMS/GetSmsInfo")
+        .then(function(response) {
+          console.log(response);
+          response.data.map(n => {
+            console.log(n);
+             _self.tableDatas.push({ids:n.smsSign,contents:n.SmsContent,dates:_self.moment(n.SendTime).format("YYYY-MM-DD HH:00:00"),names:n.userName,users:n.PhoneNumber})//SendTime
+          });
+        })
+        .catch(function(error) {
+          console.log(error);
+        });
+    },
+    //提醒框
+    openTie(){
+      const h = this.$createElement;
+
+        this.$notify({
+          title: '提示',
+          message: h('p', { style: 'color: teal'}, '请使用中文逗号隔开手机号码。')
         });
     }
   },
@@ -639,25 +683,32 @@ export default {
     this.$axios
       .get("http://192.168.13.178:8002/api/SMS/GetSmsTemplate")
       .then(function(response) {
-        for (let i = 0; i < response.data.length; i++) {
-          if (response.data[i].status == 0) {
-            response.data[i].send = "审核通过";
+        response.data.map(n => {
+          if (n.status == 0) {
+            n.send = "审核通过";
             tableD5.push({
-              name: response.data[i].remark,
-              id: response.data[i].id,
-              content: response.data[i].text,
-              date: response.data[i].time,
-              state: response.data[i].send,
+              name: n.remark,
+              id: n.id,
+              content: n.text,
+              date: n.time,
+              state: n.send,
               operation: "使用"
             });
           }
-        }
+        });
       })
       .catch(function(error) {
         console.log(error);
       });
 
     this.mouseEnter(0);
+    this.value2.push(
+      this.moment()
+        .add(-1, "days")
+        .format("YYYY-MM-DD HH:mm:ss"),
+      this.moment().format("YYYY-MM-DD HH:mm:ss")
+    );
+    this.search();
   }
 };
 </script>

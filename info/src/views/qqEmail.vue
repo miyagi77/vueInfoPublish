@@ -27,18 +27,58 @@
               <span style="height: 25px;width: 30px;display: inline-block;background-color: orange;line-height: 25px;text-align: center;color: #fff;font-weight: bold;border-radius: 6px;margin-right: 0.2%;">3</span> 
               收件人邮箱
           </p>
-            <textarea style="text-align: left;width: 97%;margin: 10px auto;height: 200px;"  placeholder="邮箱之间请用';'隔开"></textarea>
+            <textarea  v-model="qqEmaile" style="text-align: left;width: 97%;margin: 10px auto;height: 200px;"  placeholder="邮箱之间请用中文符号'，'隔开"  plain @click="openTie"></textarea>
           </div>
       </div>
       <div style="float: left;width: 17%;min-height: 500px;border: 1px solid rgb(221, 221, 221);margin-left: 20px;background-color: #fff;">
           <p style="margin: 0;height: 40px;line-height: 40px;text-align: left;background-color: #E7E7E7;padding-left: 1%;">
               <span style="height: 25px;width: 30px;display: inline-block;background-color: orange;line-height: 25px;text-align: center;color: #fff;font-weight: bold;border-radius: 6px;margin-right: 0.2%;">2</span> 
               通讯录
+              <span class="el-icon-circle-plus" style="display: inline-block;cursor: pointer;" @click="addMaile"></span>
+              <el-dialog title="添加终端" :visible.sync="dialogFormVisible">
+                <el-form :model="form">
+                    <el-form-item label="邮箱："  class="fromItm">
+                    <el-input  v-model="form.name" autocomplete="off" ></el-input>
+                    </el-form-item>
+                    <el-form-item label="单位："  class="fromItm">
+                    <el-input v-model="form.company" autocomplete="off"></el-input>
+                     </el-form-item>
+                    <el-form-item label="省："  class="fromItm">
+                    <el-input v-model="form.prov" autocomplete="off"></el-input>
+                     </el-form-item>
+                    <el-form-item label="市："  class="fromItm">
+                    <el-input v-model="form.city" autocomplete="off"></el-input>
+                     </el-form-item>
+                    <el-form-item label="县："  class="fromItm">
+                    <el-input v-model="form.cnty" autocomplete="off"></el-input>
+                     </el-form-item>
+                    <el-form-item label="乡："  class="fromItm">
+                    <el-input v-model="form.town" autocomplete="off"></el-input>
+                     </el-form-item>
+                    <el-form-item label="使用状态："  class="fromItm">
+                    <el-select v-model="form.region" placeholder="请选择使用状态">
+                        <el-option label="正常" value="0"></el-option>
+                        <el-option label="停用" value="1"></el-option>
+                    </el-select>
+                     </el-form-item>
+                    <el-form-item label="负责人："  class="fromItm">
+                    <el-input v-model="form.user" autocomplete="off"></el-input>
+                     </el-form-item>
+                    <el-form-item label="负责人电话："  class="fromItm">
+                    <el-input v-model="form.userPhone" autocomplete="off"></el-input>
+                     </el-form-item>
+                </el-form>
+                <div slot="footer" class="dialog-footer">
+                    <el-button @click="dialogFormVisible = false">取 消</el-button>
+                    <el-button type="primary" @click="addTerForWeb">确 定</el-button>
+                </div>
+               </el-dialog>
           </p>
           <el-tree
             :data="data2"
             show-checkbox
-            node-key="id"
+            ref="tree"
+            node-key="maile"
             :props="defaultProps"
             style="padding: 15px;"
             >
@@ -46,7 +86,7 @@
       </div>
       <div style="clear:both;margin-top:10px">
         <el-button type="info" style=" padding: 12px 50px;margin-left: 24%;">保存</el-button>
-        <el-button type="success" style=" padding: 12px 50px;" @click="me">发送</el-button>
+        <el-button type="success" style=" padding: 12px 50px;" @click="sendMe">发送</el-button>
       </div>
   </el-main>
   <el-main v-if="showHis">
@@ -55,25 +95,19 @@
                
                 <span class="demonstration">创建时间：</span>
                 <el-date-picker
-                v-model="value2"
-                type="datetime"
-                placeholder="选择日期时间"
-                align="right"
-                :picker-options="pickerOptions1">
-                </el-date-picker>
-                
-                -
-
-                <el-date-picker
-                v-model="value2"
-                type="datetime"
-                placeholder="选择日期时间"
-                align="right"
-                :picker-options="pickerOptions1">
+                  v-model="value2"
+                  type="datetimerange"
+                  :picker-options="pickerOptions2"
+                  range-separator="至"
+                  start-placeholder="开始日期"
+                  end-placeholder="结束日期"
+                  value-format="yyyy-MM-dd HH:mm:ss"
+                  format = "yyyy-MM-dd HH:mm:ss"
+                  align="right">
                 </el-date-picker>
 
                 
-                <el-button type="primary" icon="el-icon-search" style="margin-left: 3%;">搜索</el-button>
+                <el-button type="primary" icon="el-icon-search" style="margin-left: 3%;" @click="search">搜索</el-button>
           </div>
             <el-table
                 :data="tableDatas"
@@ -82,17 +116,14 @@
                 style="width: 100%;text-align:center">
                 <el-table-column
                 prop="ids"
-                label="编号"
+                label="标题"
                 width="180">
                 </el-table-column>
                 <el-table-column
                 prop="contents"
                 label="内容">
                 </el-table-column>
-                <el-table-column
-                prop="states"
-                label="状态">
-                </el-table-column>
+                
                 <el-table-column
                 prop="dates"
                 label="发送时间">
@@ -102,8 +133,16 @@
                 label="发信人">
                 </el-table-column>
                 <el-table-column
+                prop="states"
+                label="发信人邮箱">
+                </el-table-column>
+                <el-table-column
                 prop="users"
                 label="收件人">
+                </el-table-column>
+                <el-table-column
+                prop="userMail"
+                label="收件人邮箱">
                 </el-table-column>
             </el-table>
       </div>
@@ -116,47 +155,7 @@ export default {
   data() {
     return {
       isActived: 0,
-      data2: [
-        {
-          id: 1,
-          label: "分组1",
-          children: [
-            {
-              id: 4,
-              label: "组员1",
-              children: []
-            }
-          ]
-        },
-        {
-          id: 2,
-          label: "分组2",
-          children: [
-            {
-              id: 5,
-              label: "组员1"
-            },
-            {
-              id: 6,
-              label: "组员2"
-            }
-          ]
-        },
-        {
-          id: 3,
-          label: "分组3",
-          children: [
-            {
-              id: 7,
-              label: "组员1"
-            },
-            {
-              id: 8,
-              label: "组员2"
-            }
-          ]
-        }
-      ],
+      data2: [],
       defaultProps: {
         children: "children",
         label: "label"
@@ -187,15 +186,36 @@ export default {
           }
         ]
       },
-      tableDatas: "",
+      tableDatas: [],
       restaurants: [],
       state2: "",
       count: 1,
+      qqEmaile: "",
       showSend: true,
       showTre: false,
       showHis: false,
       textarea: "",
-      title:""
+      title: "",
+      qqEmaile: "",
+      dialogFormVisible: false,
+      form: {
+        name: "",
+        region: "",
+        date1: "",
+        date2: "",
+        delivery: false,
+        type: [],
+        resource: "",
+        desc: "",
+        company: "",
+        prov: "",
+        city: "",
+        cnty: "",
+        town: "",
+        user: "",
+        userPhone: ""
+      },
+      value2: []
     };
   },
   computed: {
@@ -208,8 +228,30 @@ export default {
     mouseEnter(index) {
       this.isActived = index;
       if (index == 0) {
+        let _self = this;
         this.showSend = true;
         this.showHis = false;
+        this.data2 = [];
+        this.$axios
+          .get("http://192.168.13.178:8002/api/Terminal/GetTerminal")
+          .then(function(response) {
+            response.data.map(n => {
+              if (n.Type == 1) {
+                _self.data2.push({
+                  label: n.TUseCompany,
+                  children: [
+                    {
+                      label: n.TerminalVal,
+                      maile: n.TerminalVal
+                    }
+                  ]
+                });
+              }
+            });
+          })
+          .catch(function(error) {
+            console.log(error);
+          });
       } else if (index == 1) {
         this.showSend = false;
         this.showHis = true;
@@ -240,12 +282,160 @@ export default {
     loadAll() {
       return [{ value: "xxxx" }, { value: "xxxx" }, { value: "xxxx" }];
     },
-    me() {
-      console.log(this.textarea);
+    //添加终端
+    addMaile() {
+      this.dialogFormVisible = true;
+    },
+    //添加终端
+    addTerForWeb() {
+      let successMessage = this.$message;
+      let _self = this;
+      this.$axios
+        .post("http://192.168.13.178:8002/api/Terminal/AddTerminal", {
+          TerminalVal: this.form.name,
+          Type: "1",
+          TUseCompany: this.form.company,
+          Province: this.form.prov,
+          City: this.form.city,
+          Cnty: this.form.cnty,
+          Town: this.form.town,
+          Status: this.form.region,
+          Contacts: this.form.user,
+          ConTel: this.form.userPhone
+        })
+        .then(function(response) {
+          if (response.data == "success") {
+            successMessage({
+              showClose: true,
+              message: "添加成功！",
+              type: "success"
+            });
+            _self.from = {
+              name: "",
+              region: "",
+              date1: "",
+              date2: "",
+              delivery: false,
+              type: [],
+              resource: "",
+              desc: "",
+              company: "",
+              prov: "",
+              city: "",
+              cnty: "",
+              town: "",
+              user: "",
+              userPhone: ""
+            };
+            _self.dialogFormVisible = false;
+          }
+        })
+        .catch(function(error) {
+          console.log(error);
+        });
+    },
+    //发送邮箱
+    sendMe() {
+      //this.$refs.tree.getCheckedKeys() 按key值获取
+      console.log(this.$refs.tree.getCheckedKeys());
+      let phonrToPost = [];
+      let _self = this;
+
+      phonrToPost = this.qqEmaile.split("，");
+      for (let i = 1; i < this.$refs.tree.getCheckedNodes().length; i++) {
+        phonrToPost.push(this.$refs.tree.getCheckedNodes()[i].maile);
+      }
+      console.log(phonrToPost);
+      let formattingArr = [];
+      for (let item of phonrToPost) {
+        if (item) {
+          formattingArr.push(item);
+        }
+      }
+      let regex3 = /[^\{\)]+(?=\})/g;
+      let successMessage = this.$message;
+
+      this.$axios
+        .post("http://192.168.13.178:8002/api/Email/SendEmail", {
+          SenderName: "王茂森", //Immdlthtxhkibfjj
+          SenderEmail: "641254423@qq.com",
+          SenderAddr: "lmmdlthtxhkibfjj",
+          ReceiverEmail: formattingArr,
+          Theme: _self.title,
+          Body: this.textarea,
+          UserName: "张雷",
+          SendTime: ""
+        })
+        .then(function(response) {
+          console.log(response);
+          if (response.data == "succ") {
+            successMessage({
+              showClose: true,
+              message: "发送成功！",
+              type: "success"
+            });
+            _self.textarea = "";
+            _self.qqEmaile = "";
+            _self.title = "";
+          } else {
+            successMessage.error("发送失败！请检查填写数据是否符合规范。");
+          }
+        })
+        .catch(function(error) {
+          console.log(error);
+        });
+      console.log(formattingArr, _self.title, this.textarea);
+    },
+    //查询
+    search() {
+      let _self = this;
+      _self.tableDatas = [];
+      this.$axios
+        .get(
+          "http://192.168.13.178:8002/api/Email/GetEmail?startTime=" +
+            this.value2[0] +
+            "&endTime=" +
+            this.value2[1]
+        )
+        .then(function(response) {
+          console.log(response);
+          response.data.map(n => {
+            console.log(n);
+            _self.tableDatas.push({
+              ids: n.Theme,
+              contents: n.Body,
+              dates: _self.moment(n.SendTime).format("YYYY-MM-DD HH:00:00"),
+              names: n.SenderName,
+              users: n.UserName,
+              states: n.SenderEmail,
+              userMail: n.ReceiverEmail,
+            });
+          });
+        })
+        .catch(function(error) {
+          console.log(error);
+        });
+    },
+    //提醒框
+    openTie(){
+      const h = this.$createElement;
+
+        this.$notify({
+          title: '提示',
+          message: h('p', { style: 'color: teal'}, '请使用中文逗号隔开邮箱。')
+        });
     }
   },
   mounted() {
     this.restaurants = this.loadAll();
+    this.mouseEnter(0);
+    this.value2.push(
+      this.moment()
+        .add(-1, "days")
+        .format("YYYY-MM-DD HH:mm:ss"),
+      this.moment().format("YYYY-MM-DD HH:mm:ss")
+    );
+    this.search();
   }
 };
 </script>
