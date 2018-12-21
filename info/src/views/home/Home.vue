@@ -494,7 +494,7 @@ export default {
           userName: "张三",
           phoneNumbers: formattingArr,
           smsSign: "延安气象信息",
-          parameters: this.textarea.match(regex3),
+          parameters: ["今天下午5","7","晴天间多云","17到15","偏北风3"],//this.textarea.match(regex3)
           templateId: "244923",
           SmsContent:this.textarea
         })
