@@ -1,5 +1,5 @@
 <template>
-  <el-container>
+  <el-container style="min-height: 768px;">
   <el-aside style="width:10%">
       <ul style="list-style: none; min-height: 400px; padding: 0; line-height: 50px;margin: 0;">
           <li v-for="(item,index) in leftList" :key="index"  @click="mouseEnter(index)"  :class="{active:index==isActive}" style="cursor:pointer"> 
@@ -49,7 +49,7 @@
                 </span>
                 </el-dialog>
             </p>
-            <textarea style="text-align: left;width: 97%;margin: 10px auto;height: 180px;"  placeholder="请输入您要发送的短信内容" v-model="textarea"></textarea>
+            <textarea style="text-align: left;width: 97%;margin: 10px auto;height: 180px;"  placeholder="请输入您要发送的短信内容" v-model="textarea" @click="openTie2"></textarea>
             <p style="margin: 0;text-align: left;font-size: small;margin-bottom: 5px;">短信签名:<span style="color:#E6A23C;margin: 0px;text-align: left;padding-left: 12px;">【延安气象信息】</span></p>
           </div>
           <div style="border:1px solid #ddd;margin-top: 10px;">
@@ -182,7 +182,7 @@
           </div>
             <el-table
                 :data="tableData3"
-                height="304px"
+                height="500px"
                 border
                 style="width: 100%;text-align:center">
                 <el-table-column
@@ -238,11 +238,12 @@
                 </el-date-picker>
 
                 
-                <el-button type="primary" icon="el-icon-search" style="margin-left: 3%;">搜索</el-button>
+                <el-button type="primary" icon="el-icon-search" style="margin-left: 3%;" @click="search">搜索</el-button>
           </div>
             <el-table
+             v-loading="loading"
                 :data="tableDatas"
-                height="304px"
+                height="500px"
                 border
                 style="width: 100%;text-align:center">
                 <el-table-column
@@ -323,7 +324,7 @@ export default {
       textareaName: "",
       textareaRemark: "",
       dialogVisibleChoose: false,
-      phoneNumber: '',
+      phoneNumber: "",
       dialogFormVisible: false,
       form: {
         name: "",
@@ -340,12 +341,13 @@ export default {
         cnty: "",
         town: "",
         user: "",
-        userPhone: ""
+        userPhone: "",
+        sendId: ""
       },
       value1: "",
       value2: [],
-      parameters : "",
-      
+      parameters: "",
+      loading: true
     };
   },
   computed: {
@@ -364,7 +366,7 @@ export default {
         this.showHis = false;
         this.data2 = [];
         this.$axios
-          .get("http://192.168.13.178:8002/api/Terminal/GetTerminal")
+          .get("http://192.168.13.130:8002/api/Terminal/GetTerminal")
           .then(function(response) {
             response.data.map(n => {
               if (n.Type == 0) {
@@ -391,7 +393,7 @@ export default {
         let tableD3 = this.tableData3;
         //查询模板
         this.$axios
-          .get("http://192.168.13.178:8002/api/SMS/GetSmsTemplate")
+          .get("http://192.168.13.130:8002/api/SMS/GetSmsTemplate")
           .then(function(response) {
             response.data.map(n => {
               if (n.status == 0) {
@@ -485,20 +487,19 @@ export default {
           formattingArr.push(item);
         }
       }
-      //截取花括号内容
-      let regex3 = /[^\{\)]+(?=\})/g;
       let successMessage = this.$message;
-      console.log(this.parameters,123456789)
+      let regex3 = /[^\{\)]+(?=\})/g;
       this.$axios
-        .post("http://192.168.13.178:8002/api/SMS/AddSms", {
+        .post("http://192.168.13.130:8002/api/SMS/AddSms", {
           userName: "张三",
           phoneNumbers: formattingArr,
           smsSign: "延安气象信息",
-          parameters: ["今天下午5","7","晴天间多云","17到15","偏北风3"],//this.textarea.match(regex3)
-          templateId: "244923",
-          SmsContent:this.textarea
+          parameters: this.textarea.match(regex3), //["今天下午5到7","晴天间多云,17到15","偏北风3"],// //this.textarea.match(regex3)
+          templateId: this.sendId,
+          SmsContent: this.textarea
         })
         .then(function(response) {
+          console.log(response);
           if (response.data == "success") {
             successMessage({
               showClose: true,
@@ -507,8 +508,8 @@ export default {
             });
             _self.textarea = "";
             _self.phoneNumber = "";
-          }else{
-            successMessage.error('发送失败！请检查填写数据是否符合规范。');
+          } else {
+            successMessage.error("发送失败！请检查填写数据是否符合规范。");
           }
         })
         .catch(function(error) {
@@ -532,7 +533,7 @@ export default {
       let successMessage = this.$message;
       let _self = this;
       this.$axios
-        .post("http://192.168.13.178:8002/api/SMS/AddSmsTemplate", {
+        .post("http://192.168.13.130:8002/api/SMS/AddSmsTemplate", {
           remark: this.textareaRemark,
           text: this.treContent,
           title: this.textareaName,
@@ -549,8 +550,8 @@ export default {
             _self.textareaRemark = "";
             _self.treContent = "";
             _self.textareaName = "";
-          }else{
-            successMessage.error('添加失败！请检查填写数据是否符合规范。');
+          } else {
+            successMessage.error("添加失败！请检查填写数据是否符合规范。");
           }
         })
         .catch(function(error) {
@@ -562,7 +563,7 @@ export default {
       let tableD5 = this.tableData5;
       this.dialogVisibleChoose = true;
       this.$axios
-        .get("http://192.168.13.178:8002/api/SMS/GetSmsTemplate")
+        .get("http://192.168.13.130:8002/api/SMS/GetSmsTemplate")
         .then(function(response) {
           response.data.map(n => {
             if (n.status == 0) {
@@ -584,16 +585,32 @@ export default {
     },
     //选择模板
     chooseSendContent(index, row) {
-      let _self = this
+      console.log(row);
+      let _self = this;
       this.textarea = "";
+      console.log(row.content.replace("1", "A"));
+
       this.dialogVisibleChoose = false;
-      console.log(row.id)
-      this.$axios.get('http://192.168.13.178:8002/api/Terminal/GetTerminalContent?templateId='+row.id)
-      .then(function(response){
-        console.log(response.data)
-        _self.textarea = response.data
-        _self.parameters = response.data
-      })
+      this.sendId = row.id.toString();
+      console.log(row.id.toString());
+      this.$axios
+        .get(
+          "http://192.168.13.130:8002/api/Terminal/GetTerminalContent?templateId=" +
+            row.id
+        )
+        .then(function(response) {
+          console.log(response.data);
+          response.data.map(n => {
+            _self.parameters = n.paramData;
+          });
+          //截取花括号内容
+          let regex3 = /[^\{\)]+(?=\})/g;
+          let needArryFrist = _self.parameters.match(regex3);
+          for (let i = 0; i < needArryFrist.length; i++) {
+            row.content = row.content.replace(i + 1, needArryFrist[i]);
+          }
+          _self.textarea = row.content;
+        });
     },
     //添加终端
     addPhone() {
@@ -604,7 +621,7 @@ export default {
       let successMessage = this.$message;
       let _self = this;
       this.$axios
-        .post("http://192.168.13.178:8002/api/Terminal/AddTerminal", {
+        .post("http://192.168.13.130:8002/api/Terminal/AddTerminal", {
           TerminalVal: this.form.name,
           Type: "0",
           TUseCompany: this.form.company,
@@ -641,8 +658,8 @@ export default {
               userPhone: ""
             };
             _self.dialogFormVisible = false;
-          }else{
-            successMessage.error('添加失败！请检查填写数据是否符合规范。');
+          } else {
+            successMessage.error("添加失败！请检查填写数据是否符合规范。");
           }
         })
         .catch(function(error) {
@@ -653,13 +670,25 @@ export default {
     search() {
       let _self = this;
       _self.tableDatas = [];
+      _self.loading = false;
       this.$axios
-        .get("http://192.168.13.178:8002/api/SMS/GetSmsInfo")
+        .get(
+          "http://192.168.13.130:8002/api/SMS/GetSmsInfo?startTime= " +
+            this.value2[0] +
+            "&endTime=" +
+            this.value2[1]
+        )
         .then(function(response) {
           console.log(response);
           response.data.map(n => {
             console.log(n);
-             _self.tableDatas.push({ids:n.smsSign,contents:n.SmsContent,dates:_self.moment(n.SendTime).format("YYYY-MM-DD HH:00:00"),names:n.userName,users:n.PhoneNumber})//SendTime
+            _self.tableDatas.push({
+              ids: n.smsSign,
+              contents: n.SmsContent,
+              dates: _self.moment(n.SendTime).format("YYYY-MM-DD HH:00:00"),
+              names: n.userName,
+              users: n.PhoneNumber
+            }); //SendTime
           });
         })
         .catch(function(error) {
@@ -667,21 +696,37 @@ export default {
         });
     },
     //提醒框
-    openTie(){
+    openTie() {
       const h = this.$createElement;
 
-        this.$notify({
-          title: '提示',
-          message: h('p', { style: 'color: teal'}, '请使用中文逗号隔开手机号码。')
-        });
-    }
+      this.$notify({
+        title: "提示",
+        message: h(
+          "p",
+          { style: "color: teal" },
+          "请使用中文逗号隔开手机号码。"
+        )
+      });
+    },
+    openTie2() {
+      const h = this.$createElement;
+
+      this.$notify({
+        title: "提示",
+        message: h(
+          "p",
+          { style: "color: teal" },
+          "请选择模板后，在{}中修改内容。"
+        )
+      });
+    },
   },
   mounted() {
     this.restaurants = this.loadAll();
     this.tableData5 = [];
     let tableD5 = this.tableData5;
     this.$axios
-      .get("http://192.168.13.178:8002/api/SMS/GetSmsTemplate")
+      .get("http://192.168.13.130:8002/api/SMS/GetSmsTemplate")
       .then(function(response) {
         response.data.map(n => {
           if (n.status == 0) {

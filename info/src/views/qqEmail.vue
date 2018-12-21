@@ -1,5 +1,5 @@
 <template>
-  <el-container>
+  <el-container style="min-height: 768px;">
   <el-aside style="width:10%">
       <ul style="list-style: none; min-height: 400px; padding: 0; line-height: 50px;margin: 0;">
           <li v-for="(item,index) in qqList" :key="index"  @click="mouseEnter(index)"  :class="{active:index==isActived}" style="cursor:pointer"> 
@@ -111,7 +111,7 @@
           </div>
             <el-table
                 :data="tableDatas"
-                height="304px"
+                height="500px"
                 border
                 style="width: 100%;text-align:center">
                 <el-table-column
@@ -233,7 +233,7 @@ export default {
         this.showHis = false;
         this.data2 = [];
         this.$axios
-          .get("http://192.168.13.178:8002/api/Terminal/GetTerminal")
+          .get("http://192.168.13.130:8002/api/Terminal/GetTerminal")
           .then(function(response) {
             response.data.map(n => {
               if (n.Type == 1) {
@@ -291,7 +291,7 @@ export default {
       let successMessage = this.$message;
       let _self = this;
       this.$axios
-        .post("http://192.168.13.178:8002/api/Terminal/AddTerminal", {
+        .post("http://192.168.13.130:8002/api/Terminal/AddTerminal", {
           TerminalVal: this.form.name,
           Type: "1",
           TUseCompany: this.form.company,
@@ -356,7 +356,7 @@ export default {
       let successMessage = this.$message;
 
       this.$axios
-        .post("http://192.168.13.178:8002/api/Email/SendEmail", {
+        .post("http://192.168.13.130:8002/api/Email/SendEmail", {
           SenderName: "王茂森", //Immdlthtxhkibfjj
           SenderEmail: "641254423@qq.com",
           SenderAddr: "lmmdlthtxhkibfjj",
@@ -392,7 +392,7 @@ export default {
       _self.tableDatas = [];
       this.$axios
         .get(
-          "http://192.168.13.178:8002/api/Email/GetEmail?startTime=" +
+          "http://192.168.13.130:8002/api/Email/GetEmail?startTime=" +
             this.value2[0] +
             "&endTime=" +
             this.value2[1]
